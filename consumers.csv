@@ -1,0 +1,101 @@
+consumer_id,name,email,age,gender,city,state,zip_code,income_bracket
+1,Alice Johnson,alice@example.com,34,F,New York,NY,10001,high
+2,Bob Smith,bob@example.com,29,M,Los Angeles,CA,90012,medium
+3,Carol Lee,carol@example.com,42,F,Chicago,IL,60601,high
+4,David Kim,david@example.com,27,M,Houston,TX,77002,low
+5,Eva Martinez,eva@example.com,38,F,Miami,FL,33131,medium
+6,Frank Chen,frank@example.com,31,M,Seattle,WA,98101,high
+7,Grace Patel,grace@example.com,45,F,Denver,CO,80202,medium
+8,Henry Wu,henry@example.com,33,M,Boston,MA,02108,high
+9,Ivy Park,ivy@example.com,26,F,Portland,OR,97201,low
+10,Jack Ryan,jack@example.com,39,M,Phoenix,AZ,85001,medium
+11,Karen Zhou,karen@example.com,35,F,Dallas,TX,75201,high
+12,Liam Ford,liam@example.com,30,M,Atlanta,GA,30303,medium
+13,Mia Lopez,mia@example.com,41,F,New York,NY,10036,high
+14,Noah Kim,noah@example.com,28,M,Brooklyn,NY,11201,low
+15,Olivia Grant,olivia@example.com,37,F,San Francisco,CA,94102,high
+16,Paul Adams,paul@example.com,44,M,Las Vegas,NV,89101,medium
+17,Quinn Rivera,quinn@example.com,25,F,Los Angeles,CA,90012,low
+18,Ryan Patel,ryan@example.com,40,M,Washington,DC,20004,high
+19,Sophia Chen,sophia@example.com,32,F,New York,NY,10028,medium
+20,Tom Nguyen,tom@example.com,36,M,Charlotte,NC,28202,high
+21,Uma Shah,uma@example.com,29,F,Detroit,MI,48201,medium
+22,Victor Lee,victor@example.com,43,M,Austin,TX,78701,high
+23,Wendy Kim,wendy@example.com,31,F,Minneapolis,MN,55401,low
+24,Xander Wu,xander@example.com,38,M,Philadelphia,PA,19102,medium
+25,Yara Singh,yara@example.com,27,F,San Antonio,TX,78205,low
+26,Zach Bell,zach@example.com,35,M,Chicago,IL,60603,high
+27,Aaron Fox,aaron@example.com,30,M,New Orleans,LA,70112,medium
+28,Bella Rose,bella@example.com,39,F,New Orleans,LA,70116,high
+29,Chris Moon,chris@example.com,26,M,Malibu,CA,90265,low
+30,Diana Surf,diana@example.com,41,F,Montauk,NY,11954,medium
+31,Eric Chile,eric@example.com,33,M,Albuquerque,NM,87102,low
+32,Fiona BBQ,fiona@example.com,37,F,Kansas City,MO,64108,medium
+33,George Steak,george@example.com,45,M,Washington,DC,20004,high
+34,Hannah Bourbon,hannah@example.com,28,F,Louisville,KY,40202,low
+35,Ian Taco,ian@example.com,34,M,Denver,CO,80202,medium
+36,Jane Brew,jane@example.com,40,F,New York,NY,10001,high
+37,Kyle Farm,kyle@example.com,29,M,Portland,OR,97201,low
+38,Lily Table,lily@example.com,36,F,Asheville,NC,28801,medium
+39,Mark Desert,mark@example.com,42,M,Las Vegas,NV,89101,high
+40,Nina Art,nina@example.com,27,F,New York,NY,10019,medium
+41,Owen Bank,owen@example.com,38,M,New York,NY,10001,high
+42,Pamela Wealth,pamela@example.com,44,F,San Francisco,CA,94102,high
+43,Quinn Insure,quinn@example.com,31,M,Chicago,IL,60601,medium
+44,Ray Ivy,ray@example.com,35,M,Cambridge,MA,02138,high
+45,Sara Shrimp,sara@example.com,30,F,Charleston,SC,29401,medium
+46,Ted Canvas,ted@example.com,39,M,New York,NY,10019,high
+47,Uma Graffiti,uma@example.com,26,F,New York,NY,10001,low
+48,Victor Climb,victor@example.com,33,M,Boulder,CO,80301,medium
+49,Will Vine,will@example.com,41,M,Napa,CA,94558,high
+50,Xena Market,xena@example.com,28,F,New York,NY,10001,low
+51,Yusuf Beer,yusuf@example.com,36,M,New York,NY,10001,medium
+52,Zara Farm,zara@example.com,34,F,Portland,OR,97201,low
+53,Alex Dine,alex@example.com,40,M,Washington,DC,20004,high
+54,Becky Brew,becky@example.com,29,F,New York,NY,10001,low
+55,Carl Ivy,carl@example.com,37,M,Cambridge,MA,02138,high
+56,Dana Surf,dana@example.com,32,F,Montauk,NY,11954,medium
+57,Evan Art,evan@example.com,39,M,New York,NY,10019,high
+58,Fay Beer,fay@example.com,27,F,New York,NY,10001,low
+59,Gus Wine,gus@example.com,42,M,Napa,CA,94558,high
+60,Hank Coffee,hank@example.com,30,M,New York,NY,10001,medium
+61,Iris Finance,iris@example.com,35,F,New York,NY,10001,high
+62,Jack Wealth,jack@example.com,41,M,San Francisco,CA,94102,high
+63,Kate Insure,kate@example.com,28,F,Chicago,IL,60601,medium
+64,Luke Ivy,luke@example.com,36,M,Cambridge,MA,02138,high
+65,Mona Shrimp,mona@example.com,33,F,Charleston,SC,29401,medium
+66,Nate Canvas,nate@example.com,38,M,New York,NY,10019,high
+67,Olga Graffiti,olga@example.com,25,F,New York,NY,10001,low
+68,Pat Climb,pat@example.com,34,M,Boulder,CO,80301,medium
+69,Quinn Vine,quinn@example.com,40,M,Napa,CA,94558,high
+70,Ron Market,ron@example.com,29,M,New York,NY,10001,low
+71,Sue Beer,sue@example.com,37,F,New York,NY,10001,medium
+72,Tom Farm,tom@example.com,35,M,Portland,OR,97201,low
+73,Uma Dine,uma@example.com,41,F,Washington,DC,20004,high
+74,Vic Brew,vic@example.com,30,M,New York,NY,10001,low
+75,Wes Ivy,wes@example.com,38,M,Cambridge,MA,02138,high
+76,Xia Surf,xia@example.com,27,F,Montauk,NY,11954,medium
+77,Yan Art,yan@example.com,39,M,New York,NY,10019,high
+78,Zoe Beer,zoe@example.com,26,F,New York,NY,10001,low
+79,Abe Wine,abe@example.com,42,M,Napa,CA,94558,high
+80,Beth Coffee,beth@example.com,31,F,New York,NY,10001,medium
+81,Cal Finance,cal@example.com,36,F,New York,NY,10001,high
+82,Deb Wealth,deb@example.com,40,M,San Francisco,CA,94102,high
+83,Eve Insure,eve@example.com,29,F,Chicago,IL,60601,medium
+84,Finn Ivy,finn@example.com,37,M,Cambridge,MA,02138,high
+85,Gia Shrimp,gia@example.com,32,F,Charleston,SC,29401,medium
+86,Hal Canvas,hal@example.com,39,M,New York,NY,10019,high
+87,Ivy Graffiti,ivy@example.com,26,F,New York,NY,10001,low
+88,Jay Climb,jay@example.com,34,M,Boulder,CO,80301,medium
+89,Kay Vine,kay@example.com,41,M,Napa,CA,94558,high
+90,Leo Market,leo@example.com,28,M,New York,NY,10001,low
+91,Mia Beer,mia@example.com,35,F,New York,NY,10001,medium
+92,Noel Farm,noel@example.com,33,M,Portland,OR,97201,low
+93,Owen Dine,owen@example.com,40,F,Washington,DC,20004,high
+94,Pip Brew,pip@example.com,29,M,New York,NY,10001,low
+95,Quinn Ivy,quinn@example.com,36,M,Cambridge,MA,02138,high
+96,Rae Surf,rae@example.com,27,F,Montauk,NY,11954,medium
+97,Sam Art,sam@example.com,38,M,New York,NY,10019,high
+98,Tia Beer,tia@example.com,25,F,New York,NY,10001,low
+99,Uma Wine,uma@example.com,41,M,Napa,CA,94558,high
+100,Vic Coffee,vic@example.com,30,M,New York,NY,10001,medium
