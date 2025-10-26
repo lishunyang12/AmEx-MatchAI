@@ -69,6 +69,15 @@ def load_and_enrich_data():
     consumers = pd.read_csv("consumers.csv")
     merchants = pd.read_csv("merchants.csv")
     transactions = pd.read_csv("transactions.csv")
+    # --- LOAD OR INITIALIZE WEIGHTS DATABASE ---
+    try:
+        weights_db = pd.read_csv("user_weights.csv", index_col="consumer_id")
+    except FileNotFoundError:
+        weights_db = pd.DataFrame(columns=[
+            "consumer_id", "category_weight", "price_weight", 
+            "proximity_weight", "baseline_weight", "small_business_weight"
+        ])
+        weights_db.set_index("consumer_id", inplace=True)
 
     price_tiers = {
         'coffee': 0.3, 'fast food': 0.2, 'food trucks': 0.25,
@@ -101,46 +110,72 @@ def load_and_enrich_data():
     top_cat = consumer_spend.idxmax(axis=1)
     consumers['top_category'] = consumers['consumer_id'].map(top_cat).fillna('dining')
 
-    return consumers, merchants, transactions, consumer_spend
+    return consumers, merchants, transactions, consumer_spend, weights_db
 
 try:
-    consumers, merchants, transactions, consumer_spend = load_and_enrich_data()
+    consumers, merchants, transactions, consumer_spend, weights_db = load_and_enrich_data()
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
 
 # -------------------------------
-# USER CONTROLS
+# OPTIMIZED USER CONTROLS SIDEBAR
 # -------------------------------
-st.sidebar.header("Privacy & Controls")
-show_logs = st.sidebar.checkbox("🔍 Show System Logs", False)
-consumer_options = consumers.set_index("consumer_id")["name"]
-selected_name = st.sidebar.selectbox("Select Consumer", consumer_options)
-opt_out_cats = st.sidebar.multiselect("Opt-out Categories", options=sorted(merchants["category"].unique()))
-pause_deals = st.sidebar.checkbox("⏸️ Pause Personalized Deals")
-delete_memory = st.sidebar.button("🗑️ Delete AI Memory")
 
-# Initialize logs
+st.sidebar.header("User & Privacy Controls")
+show_logs = st.sidebar.checkbox("🔍 Show System Logs", value=False)
+
+# session_state initialize
+if "memory_deleted" not in st.session_state:
+    st.session_state.memory_deleted = False
+
+# === USER SELECTION GROUP ===
+with st.sidebar.expander("👤 User Controls", expanded=True):
+    consumer_options = consumers.set_index("consumer_id")["name"]
+    selected_name = st.selectbox("Select Consumer", consumer_options)
+
+# === PERSONALIZATION CONTROLS ===
+with st.sidebar.expander("🔒 Personalization Controls", expanded=True):
+    pause_deals = st.checkbox("⏸️ Pause Personalized Deals", value=False)
+
+    opt_out_cats = st.multiselect(
+        "Opt-out Categories",
+        options=sorted(merchants["category"].unique()),
+        disabled=pause_deals
+    )
+
+    # Delete AI Memory directly
+    if st.button("🗑️ Delete AI Memory"):
+        st.session_state.memory_deleted = True
+        st.sidebar.success("AI memory cleared (simulated).")
+
+# === SYSTEM LOGS ===
 system_logs = {
-    "llm_status": llm_status,
+    "llm_status": llm_status if 'llm_status' in locals() else "unknown",
     "privacy_controls": {
         "opt_out_categories": opt_out_cats,
         "deals_paused": pause_deals,
-        "memory_deleted": delete_memory
+        "memory_deleted": st.session_state.memory_deleted
     },
     "matchmaking_details": [],
     "fairness_applied": False
 }
 
-if delete_memory:
-    st.sidebar.success("AI memory cleared (simulated).")
+# === STATUS DISPLAY ===
+if st.session_state.memory_deleted:
+    st.sidebar.info("AI memory is currently cleared.")
+if pause_deals:
+    st.sidebar.success("Personalized deals are currently paused")
 
+# === PAUSED DEALS EFFECT ===
 if pause_deals:
     st.info("⏸️ Personalized deals are paused. Showing popular deals instead.")
-    top_merchants = merchants.sort_values('merchant_id', ascending=False).head(5)
+    top_merchants = merchants.sort_values('merchant_id', ascending=False).head(10)
     for _, m in top_merchants.iterrows():
-        st.write(f"**{m['name']}** ({m['category']}) – Popular in {m['city']}")
+        st.write(f"- **{m['name']}** ({m['category']}) – {m['city']}")
     st.stop()
+
+
 
 # -------------------------------
 # SELECTED CONSUMER
@@ -154,14 +189,61 @@ if pd.isna(consumer_lat):
     consumer_lat, consumer_lon = 40.7484, -73.9857
 
 # -------------------------------
-# MATCHMAKING WITH LOGGING
+# GET USER WEIGHTS (LLM + CSV CACHE + LOGGING)
 # -------------------------------
-def compute_scores_with_logs(consumer_row, merchants, consumer_spend, opt_out_cats, logs):
+def get_user_weights(consumer_id, user_consumption, llm, weights_db):
+
+    if consumer_id in weights_db.index:
+        # Read weight memory
+        weights = weights_db.loc[consumer_id].values.astype(float)
+    else:
+        prompt = f"""
+        User past spending: {user_consumption}
+
+        Suggest normalized weights for the following factors (sum=1):
+        category, price, proximity, baseline, small_business
+        Return as a Python list, e.g., [0.3, 0.25, 0.2, 0.15, 0.1].
+        """
+
+        # 调用 LLM 并带日志记录
+        fallback = "[0.4, 0.25, 0.2, 0.1, 0.05]"  # default weight
+        weights_text = generate_with_llm(prompt, fallback, log_key=f"user_weights_{consumer_id}")
+
+        try:
+            weights = eval(weights_text)
+            weights = np.array(weights) / sum(weights)
+        except Exception:
+            weights = np.array([0.4, 0.25, 0.2, 0.1, 0.05])
+
+        # Write to memory
+        weights_db.loc[consumer_id] = weights
+        weights_db.to_csv("user_weights.csv")
+
+    return weights
+
+
+# -------------------------------
+# MATCHMAKING WITH DYNAMIC WEIGHTS
+# -------------------------------
+def compute_scores_dynamic(
+    consumer_row, consumer_id, consumer_lat, consumer_lon,
+    merchants, consumer_spend, opt_out_cats, logs, llm, weights_db
+):
+    """
+    Compute recommendation scores for a consumer with dynamic weights from LLM.
+    Returns scores array and updates logs.
+    """
+    user_consumption = consumer_spend.loc[consumer_id].to_dict()
+    
+    weights = get_user_weights(consumer_id, user_consumption, llm, weights_db)
+    
     scores = []
     details = []
+
     for idx, m in merchants.iterrows():
         log_entry = {"merchant": m['name'], "category": m['category'], "reasons": []}
-        
+
+        # --- opt-out category ---
         if m['category'] in opt_out_cats:
             scores.append(-1)
             log_entry["score"] = -1
@@ -169,50 +251,60 @@ def compute_scores_with_logs(consumer_row, merchants, consumer_spend, opt_out_ca
             details.append(log_entry)
             continue
 
-        # Category score
+        # --- category score ---
         cat_score = consumer_spend.loc[consumer_id, m['category']] if m['category'] in consumer_spend.columns else 0
         cat_norm = min(cat_score / 100.0, 1.0)
         log_entry["category_spend"] = cat_score
         log_entry["category_score"] = cat_norm
 
-        # Price alignment
+        # --- price score ---
         price_match = 1.0 - abs(m['price_tier'] - consumer_row['income_numeric'])
         log_entry["price_match"] = price_match
 
-        # Proximity
+        # --- distance score ---
         dist = haversine_distance(consumer_lat, consumer_lon, m['lat'], m['lon'])
         proximity = np.exp(-dist / 10.0)
         log_entry["distance_km"] = dist
         log_entry["proximity_score"] = proximity
 
-        # Small biz boost
+        # --- Small Marchent score ---
         small_boost = 0.2 if m['is_small_business'] else 0.0
         if small_boost > 0:
             log_entry["reasons"].append("Small business boost applied")
 
-        # Final score
-        score = 0.4*cat_norm + 0.25*price_match + 0.2*proximity + 0.1*0.5 + 0.05*small_boost
+        # --- Final Score ---
+        score = (
+            weights[0]*cat_norm +
+            weights[1]*price_match +
+            weights[2]*proximity +
+            weights[3]*0.5 +       # baseline
+            weights[4]*small_boost
+        )
         scores.append(score)
+
         log_entry["final_score"] = score
         log_entry["is_small_business"] = bool(m['is_small_business'])
         details.append(log_entry)
-    
+
+    # --- Update log ---
     logs["matchmaking_details"] = details
-    return np.array(scores)
+    logs["user_weights"] = weights.tolist()
 
-scores = compute_scores_with_logs(consumer_row, merchants, consumer_spend, opt_out_cats, system_logs)
+    scores = np.array(scores)
 
-# Fairness enforcement
-large_mask = merchants['merchant_id'] <= 130
-small_mask = ~large_mask
-top10 = np.argsort(scores)[::-1][:10]
-small_in_top = small_mask[top10].sum()
-
-if small_in_top < 2:
-    scores[small_mask] += 0.15
-    system_logs["fairness_applied"] = True
-    system_logs["fairness_log"] = f"Boosted small businesses: only {small_in_top} in top 10, now enforced minimum of 2."
+    # --- Small Marchent bonus point ---
+    large_mask = merchants['merchant_id'] <= 130
+    small_mask = ~large_mask
     top10 = np.argsort(scores)[::-1][:10]
+    small_in_top = small_mask[top10].sum()
+
+    if small_in_top < 2:
+        scores[small_mask] += 0.15
+        logs["fairness_applied"] = True
+        logs["fairness_log"] = f"Boosted small businesses: only {small_in_top} in top 10, now enforced minimum of 2."
+
+    return scores, top10
+
 
 # -------------------------------
 # LLM UTIL WITH LOGGING
@@ -253,36 +345,49 @@ with c3:
 
 st.subheader("Your AI-Powered Deals")
 
-# Bundle deal
-if len(top10) >= 2:
-    m1, m2 = merchants.iloc[top10[0]], merchants.iloc[top10[1]]
-    bundle_prompt = f"Create a fun bundled experience for {consumer_row['name']} combining {m1['name']} ({m1['category']}) and {m2['name']} ({m2['category']}) in {m1['city']}."
-    bundle_fallback = f"✨ Bundle idea: Enjoy {m1['category']} at {m1['name']} and {m2['category']} at {m2['name']}!"
-    bundle_deal = generate_with_llm(bundle_prompt, bundle_fallback, "bundle_deal")
-    st.info(f"**Experience Bundle**: {bundle_deal}")
+with st.spinner("Generating your personalized deals... ⏳"):
+    scores, top10 = compute_scores_dynamic(
+    consumer_row,
+    consumer_id,
+    consumer_lat,
+    consumer_lon,
+    merchants,
+    consumer_spend,
+    opt_out_cats,
+    system_logs,
+    llm,
+    weights_db
+    )
+    # Bundle deal
+    if len(top10) >= 2:
+        m1, m2 = merchants.iloc[top10[0]], merchants.iloc[top10[1]]
+        bundle_prompt = f"Create a fun bundled experience for {consumer_row['name']} combining {m1['name']} ({m1['category']}) and {m2['name']} ({m2['category']}) in {m1['city']}."
+        bundle_fallback = f"✨ Bundle idea: Enjoy {m1['category']} at {m1['name']} and {m2['category']} at {m2['name']}!"
+        bundle_deal = generate_with_llm(bundle_prompt, bundle_fallback, "bundle_deal")
+        st.info(f"**Experience Bundle**: {bundle_deal}")
 
-# Top matches
-for rank, idx in enumerate(top10[:5], 1):
-    m = merchants.iloc[idx]
-    score = scores[idx]
+    # Top matches
+    for rank, idx in enumerate(top10[:5], 1):
+        m = merchants.iloc[idx]
+        score = scores[idx]
 
-    deal_prompt = f"Generate a short deal for {consumer_row['name']} at {m['name']} ({m['category']}, {m['city']})."
-    deal = generate_with_llm(deal_prompt, f"{consumer_row['name']}, get 20% off at {m['name']}!", f"deal_{rank}")
+        deal_prompt = f"Generate a short deal for {consumer_row['name']} at {m['name']} ({m['category']}, {m['city']})."
+        deal = generate_with_llm(deal_prompt, f"{consumer_row['name']}, get 20% off at {m['name']}!", f"deal_{rank}")
 
-    exp_prompt = f"Explain why {consumer_row['name']} would love {m['name']}."
-    explanation = generate_with_llm(exp_prompt, f"Matches your preferences.", f"explanation_{rank}")
+        exp_prompt = f"Explain why {consumer_row['name']} would love {m['name']}."
+        explanation = generate_with_llm(exp_prompt, f"Matches your preferences.", f"explanation_{rank}")
 
-    with st.expander(f"#{rank} – {m['name']} ({m['category'].title()}) – {score:.1%} match"):
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            st.image(f"https://via.placeholder.com/120?text={m['category'].title()}", width=110)
-        with col2:
-            st.write(f"📍 {m['city']}, {m['state']}")
-            st.write(f"💰 {'Premium' if m['price_tier'] > 0.7 else 'Affordable'} | 🏪 {'Small Biz' if m['is_small_business'] else 'Chain'}")
-            st.markdown(f"**Offer**: {deal}")
-        st.progress(min(score, 1.0))
-        with st.expander("🔍 Why this match?"):
-            st.write(explanation)
+        with st.expander(f"#{rank} – {m['name']} ({m['category'].title()}) – {score:.1%} match"):
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.image(f"https://via.placeholder.com/120?text={m['category'].title()}", width=110)
+            with col2:
+                st.write(f"📍 {m['city']}, {m['state']}")
+                st.write(f"💰 {'Premium' if m['price_tier'] > 0.7 else 'Affordable'} | 🏪 {'Small Biz' if m['is_small_business'] else 'Chain'}")
+                st.markdown(f"**Offer**: {deal}")
+            st.progress(min(score, 1.0))
+            with st.expander("🔍 Why this match?"):
+                st.write(explanation)
 
 # -------------------------------
 # MERCHANT INSIGHTS
