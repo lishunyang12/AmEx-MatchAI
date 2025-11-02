@@ -9,8 +9,10 @@ from typing import Dict, List, Any, Tuple, Optional, Set
 from math import radians, sin, cos, sqrt, atan2
 import logging
 
-# Yr openai key here
-openai_key = ""  
+# Your openai key here
+openai_key = ""
+# LLM model here (e.g., "gpt-5-nano")
+llm_model = "" # or os.getenv("OPENAI_MODEL", default_model_name) if you want it configurable via env var
 
 # --- Logging ---
 logging.basicConfig(level=logging.INFO)
@@ -163,8 +165,7 @@ def get_openai_client():
 
 # --- Intent extraction and preference deduction (with safer, defensive API calls) ---
 def extract_intent(user_request: str, model: str = None) -> Dict[str, Any]:
-    # Use gpt-5 instead of defaulting to gpt-3.5-turbo
-    model = "gpt-5-nano" # or os.getenv("OPENAI_MODEL", "gpt-5") if you want it configurable via env var
+    model = llm_model
     intent_prompt = f"""
     Analyze the user request: "{user_request}"
 
@@ -236,7 +237,7 @@ def extract_intent(user_request: str, model: str = None) -> Dict[str, Any]:
         return {}
 
 # --- Refine Intent based on User Profile and Real Intent ---
-def refine_intent_with_real_intent(user_request: str, initial_intent: Dict[str, Any], customer: Dict[str, Any], model: str = "gpt-5-nano") -> Dict[str, Any]:
+def refine_intent_with_real_intent(user_request: str, initial_intent: Dict[str, Any], customer: Dict[str, Any], model: str = llm_model) -> Dict[str, Any]:
     """
     Uses an LLM to interpret the real intent from the user's request and profile,
     potentially refining the initial intent extracted by extract_intent.
@@ -318,8 +319,7 @@ def refine_intent_with_real_intent(user_request: str, initial_intent: Dict[str, 
 
 
 def deduce_profile_preferences(customer: Dict[str, Any], category: str, model: str = None) -> Set[str]:
-    # Use gpt-5 instead of defaulting to gpt-3.5-turbo
-    model = "gpt-5-nano" # or os.getenv("OPENAI_MODEL", "gpt-5") if you want it configurable via env var
+    model = llm_model
     # CRITICAL FIX: Use {} instead of {{}} in the f-string for address
     profile_prompt = f"""
     Deduce preferences for a {category} request based on the following user profile:
@@ -592,8 +592,7 @@ def generate_personalized_offer(customer_id: int, user_request: str) -> Tuple[st
 
     try:
         client = get_openai_client()
-        # Use gpt-5 instead of defaulting to gpt-3.5-turbo
-        model = "gpt-5-nano" # or os.getenv("OPENAI_MODEL", "gpt-5") if you want it configurable via env var
+        model = llm_model
         response = client.chat.completions.create(
             model=model,
             messages=[
